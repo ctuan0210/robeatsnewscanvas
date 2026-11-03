@@ -121,7 +121,7 @@ export const SongCatalogModal: React.FC<SongCatalogModalProps> = ({
             <Search className="w-4 h-4 text-purple-400 absolute left-3 top-1/2 -translate-y-1/2" />
             <input
               type="text"
-              placeholder="Search song title, artist, or element..."
+              placeholder="Search..."
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               className="w-full bg-[#100c22] border border-purple-500/30 rounded-xl pl-9 pr-8 py-2 text-sm text-white placeholder-purple-400/50 focus:outline-none focus:border-pink-500 transition"

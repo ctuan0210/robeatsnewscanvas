@@ -7,6 +7,8 @@ import {
   RotateCcw,
   Move,
   Palette,
+  ZoomIn,
+  ZoomOut,
 } from 'lucide-react';
 
 interface SlotEditorProps {
@@ -26,7 +28,10 @@ export const SlotEditor: React.FC<SlotEditorProps> = ({
   const fileInputRef = useRef<HTMLInputElement>(null);
   const isStar = slotType === 'star';
 
-  // Handle local image file upload (locks to Zoom 0.9x)
+  // Current cover scale
+  const currentScale = slot.scale !== undefined && slot.scale !== null ? slot.scale : 0.9;
+
+  // Handle local image file upload
   const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
@@ -34,7 +39,7 @@ export const SlotEditor: React.FC<SlotEditorProps> = ({
       reader.onload = () => {
         onChange({
           coverImage: reader.result as string,
-          scale: 0.9, // Locked to 0.9x as requested
+          scale: slot.scale || 0.9,
           offsetX: 0,
           offsetY: 0,
           fit: 'cover',
@@ -42,20 +47,6 @@ export const SlotEditor: React.FC<SlotEditorProps> = ({
       };
       reader.readAsDataURL(file);
     }
-  };
-
-  // Quick score formatters
-  const formatScoreWithDots = (val: string) => {
-    const raw = val.replace(/[^0-9]/g, '');
-    if (!raw) return val;
-    const parts = [];
-    let rem = raw;
-    while (rem.length > 3) {
-      parts.unshift(rem.slice(-3));
-      rem = rem.slice(0, -3);
-    }
-    if (rem.length > 0) parts.unshift(rem);
-    return parts.join('.');
   };
 
   const artistX = slot.artistOffsetX || 0;
@@ -68,7 +59,7 @@ export const SlotEditor: React.FC<SlotEditorProps> = ({
 
   return (
     <div className="space-y-4">
-      {/* 1. Cover Art (Locked Zoom 0.9x) */}
+      {/* 1. Cover Art */}
       <div className="bg-[#17122e] border border-purple-500/20 rounded-xl p-3.5 space-y-3">
         <div className="flex items-center justify-between">
           <label className="text-xs font-semibold text-purple-200 flex items-center gap-1.5">
@@ -118,10 +109,65 @@ export const SlotEditor: React.FC<SlotEditorProps> = ({
             type="text"
             placeholder="Or paste direct image URL (https://...)"
             value={slot.coverImage.startsWith('data:') ? '' : slot.coverImage}
-            onChange={(e) => onChange({ coverImage: e.target.value, fit: 'cover', scale: 0.9 })}
+            onChange={(e) => onChange({ coverImage: e.target.value, fit: 'cover', scale: slot.scale || 0.9 })}
             className="w-full bg-[#100c22] border border-purple-500/30 rounded-lg pl-8 pr-3 py-2 text-xs text-white placeholder-purple-400/40 focus:outline-none focus:border-pink-500 transition"
           />
         </div>
+
+        {/* Cover Art Scale (Zoom In / Zoom Out) */}
+        {slot.coverImage && (
+          <div className="pt-2.5 border-t border-purple-500/20 space-y-1.5">
+            <div className="flex items-center justify-between text-xs">
+              <span className="text-purple-300 font-medium flex items-center gap-1.5">
+                <ZoomIn className="w-3.5 h-3.5 text-pink-400" />
+                Cover Zoom
+              </span>
+              <div className="flex items-center gap-2">
+                <span className="font-mono text-yellow-300 text-xs font-semibold">
+                  {Math.round(currentScale * 100)}% ({currentScale.toFixed(2)}x)
+                </span>
+                <button
+                  type="button"
+                  onClick={() => onChange({ scale: 0.9 })}
+                  className="text-[10px] text-purple-400 hover:text-white px-1.5 py-0.5 rounded bg-purple-900/40 border border-purple-500/30 transition cursor-pointer"
+                  title="Reset zoom to 0.9x"
+                >
+                  Reset
+                </button>
+              </div>
+            </div>
+
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                onClick={() => onChange({ scale: Math.max(0.2, Number((currentScale - 0.05).toFixed(2))) })}
+                className="w-7 h-7 flex items-center justify-center rounded-lg bg-purple-900/40 hover:bg-purple-900/70 border border-purple-500/30 text-purple-200 hover:text-white transition cursor-pointer"
+                title="Zoom Out (-5%)"
+              >
+                <ZoomOut className="w-3.5 h-3.5" />
+              </button>
+
+              <input
+                type="range"
+                min="0.2"
+                max="2.5"
+                step="0.05"
+                value={currentScale}
+                onChange={(e) => onChange({ scale: parseFloat(e.target.value) })}
+                className="flex-1 accent-pink-500 cursor-pointer"
+              />
+
+              <button
+                type="button"
+                onClick={() => onChange({ scale: Math.min(2.5, Number((currentScale + 0.05).toFixed(2))) })}
+                className="w-7 h-7 flex items-center justify-center rounded-lg bg-purple-900/40 hover:bg-purple-900/70 border border-purple-500/30 text-purple-200 hover:text-white transition cursor-pointer"
+                title="Zoom In (+5%)"
+              >
+                <ZoomIn className="w-3.5 h-3.5" />
+              </button>
+            </div>
+          </div>
+        )}
       </div>
 
       {/* 2. Text Edits */}
@@ -146,7 +192,6 @@ export const SlotEditor: React.FC<SlotEditorProps> = ({
             <label className="text-xs font-semibold text-purple-200">
               Song Title
             </label>
-            <span className="text-[10px] text-purple-400">Press Enter for new line</span>
           </div>
           <textarea
             rows={2}
@@ -163,21 +208,6 @@ export const SlotEditor: React.FC<SlotEditorProps> = ({
             <label className="text-xs font-semibold text-purple-200">
               Score
             </label>
-            <div className="flex gap-1.5 text-[10px]">
-              <button
-                onClick={() => onChange({ score: formatScoreWithDots(slot.score) })}
-                className="px-2 py-0.5 rounded bg-purple-800/40 hover:bg-purple-700/60 text-purple-200 border border-purple-600/30 transition cursor-pointer"
-                title="Format with dots e.g. 12.345.678"
-              >
-                Add Dots (.)
-              </button>
-              <button
-                onClick={() => onChange({ score: '12.345.678' })}
-                className="px-2 py-0.5 rounded bg-purple-800/40 hover:bg-purple-700/60 text-purple-200 border border-purple-600/30 transition cursor-pointer"
-              >
-                Default
-              </button>
-            </div>
           </div>
           <input
             type="text"
@@ -189,12 +219,12 @@ export const SlotEditor: React.FC<SlotEditorProps> = ({
         </div>
       </div>
 
-      {/* 3. Typography & Color (per Star / Pro Mission) */}
+      {/* 3. Font Styling (per Star / Pro Mission) */}
       <div className="bg-[#17122e] border border-purple-500/20 rounded-xl p-3.5 space-y-3.5">
         <div className="flex items-center justify-between">
           <label className="text-xs font-semibold text-purple-200 flex items-center gap-1.5">
             <Palette className="w-3.5 h-3.5 text-pink-400" />
-            {isStar ? 'Star Typography & Styling' : 'Pro Typography & Styling'}
+            Font Styling
           </label>
           <button
             onClick={() =>
@@ -317,12 +347,12 @@ export const SlotEditor: React.FC<SlotEditorProps> = ({
         </div>
       </div>
 
-      {/* 4. Manual Text Movement (Artist & Song Name) */}
+      {/* 4. Text Position (Artist & Song Name) */}
       <div className="bg-[#17122e] border border-purple-500/20 rounded-xl p-3.5 space-y-3">
         <div className="flex items-center justify-between">
           <label className="text-xs font-semibold text-purple-200 flex items-center gap-1.5">
             <Move className="w-3.5 h-3.5 text-yellow-300" />
-            Manual Text Movement
+            Text Position
           </label>
           <button
             onClick={() =>
@@ -335,7 +365,7 @@ export const SlotEditor: React.FC<SlotEditorProps> = ({
             }
             className="text-[11px] text-purple-400 hover:text-white flex items-center gap-1 cursor-pointer"
           >
-            <RotateCcw className="w-3 h-3" /> Center All
+            <RotateCcw className="w-3 h-3" /> Reset
           </button>
         </div>
 

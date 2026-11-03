@@ -24,10 +24,15 @@ export const Navbar: React.FC<NavbarProps> = ({
   return (
     <header className="bg-[#140f29]/90 backdrop-blur-md border-b border-purple-500/20 sticky top-0 z-30 px-4 py-3">
       <div className="max-w-7xl mx-auto flex items-center justify-between gap-4">
-        {/* Brand Title without icon */}
+        {/* Brand Title with RoBeats Logo */}
         <div className="flex items-center gap-2.5">
+          <img
+            src="https://i.postimg.cc/5tfFpKg4/image.png"
+            alt="RoBeats Logo"
+            className="w-8 h-8 sm:w-9 sm:h-9 object-contain drop-shadow"
+          />
           <h1 className="font-righteous text-lg sm:text-xl text-transparent bg-clip-text bg-gradient-to-r from-yellow-300 via-pink-400 to-purple-300 tracking-wide">
-            ROBEATS NEWS HUB
+            RoBeats! News Hub
           </h1>
           <span className="px-2 py-0.5 text-[11px] font-righteous bg-pink-500/20 text-pink-300 rounded-md border border-pink-500/30">
             for STAFF
